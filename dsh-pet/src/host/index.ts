@@ -636,21 +636,23 @@ export function apply(ctx: any): void {
     const mark = <T>(v: T): T | (T & { manual: true }) => (manual ? { ...v, manual: true } : v);
     try {
       const sel = ctx.agentDefaultModel.currentSelection();
-      const result = await queryBalance(
-        sel.provider,
-        async (ref) => {
-          const rc = await ctx.credentials.resolve(credentialRef(ref));
-          return rc?.value;
-        },
-        // `deepseek-account`（免费额度 / 平台登录）没有 API Key：它的凭证是 DSH 账号服务
-        // 持有的授权记录，只能经 getBalance 查询。账号服务是**可选**服务（软取，不放进
-        // inject）——没装账号插件时它不在场，此时该路由报 credential-missing 而不是崩。
-        async () => {
-          const account = ctx.get('deepseekAccount', false);
-          if (!account) return undefined;
-          return account.getBalance(accountClientMetadata());
-        },
-      );
+      const result = ctx.codexUsage
+        ? await ctx.codexUsage()
+        : await queryBalance(
+            sel.provider,
+            async (ref) => {
+              const rc = await ctx.credentials.resolve(credentialRef(ref));
+              return rc?.value;
+            },
+            // `deepseek-account`（免费额度 / 平台登录）没有 API Key：它的凭证是 DSH 账号服务
+            // 持有的授权记录，只能经 getBalance 查询。账号服务是**可选**服务（软取，不放进
+            // inject）——没装账号插件时它不在场，此时该路由报 credential-missing 而不是崩。
+            async () => {
+              const account = ctx.get('deepseekAccount', false);
+              if (!account) return undefined;
+              return account.getBalance(accountClientMetadata());
+            },
+          );
       state.writeSection('balance', mark(result));
     } catch (e) {
       state.writeSection(

@@ -47,6 +47,7 @@ export interface StandaloneTextBlock {
  * 独立模式只会拿到空流（没有模型后端），这里保持最小可用实现。
  */
 export class BlockAssembler {
+  readonly finish = undefined;
   private readonly chunks: string[] = [];
 
   /** 收集一个块；非文本块（工具调用等）在独立模式下被忽略 */

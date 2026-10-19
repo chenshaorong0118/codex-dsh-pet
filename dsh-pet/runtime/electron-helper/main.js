@@ -45,7 +45,7 @@ try {
   );
   process.exit(3);
 }
-const { app, BrowserWindow, ipcMain, screen, shell, protocol, Tray, Menu, nativeImage } = electronApi;
+const { app, BrowserWindow, ipcMain, screen, shell, protocol, Tray, Menu, nativeImage, Notification } = electronApi;
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { readFileSync, writeFileSync } = require('node:fs');
@@ -68,7 +68,8 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // 显式定名：Helper 是被 `electron.exe <main.js>` 直接拉起的，Electron 取不到 app 名会回落成
 // "Electron"，userData 便落到 %APPDATA%\Electron —— 那是所有这么跑的 Electron 脚本的公共目录，
 // 我们的 DPI 缓存与 Chromium profile 都会和别人混在一起。必须赶在任何 getPath('userData') 之前设。
-app.setName('dsh-pet-electron-helper');
+app.setName(process.env.CODEX_PET_DATA ? 'codex-dsh-pet' : 'dsh-pet-electron-helper');
+if (process.env.CODEX_PET_DATA) app.setPath('userData', path.join(process.env.CODEX_PET_DATA, 'chromium'));
 
 /** DPI 探测子进程模式：不建窗口，只把主屏 scaleFactor 打到 stdout 就退出（见 probePrimaryScale） */
 const DPI_PROBE = process.env.DSH_PET_DPI_PROBE === '1';
@@ -728,19 +729,62 @@ async function startTray() {
       .filter((pet) => pet.id);
     if (!pets.length) return; // 配置里没有任何宠物：没有可切换的对象，不建托盘
     tray = new Tray(trayIcon());
-    tray.setToolTip('dsh-pet 桌面宠物');
+    tray.setToolTip(process.env.CODEX_PET_DATA ? 'Codex 桌宠' : 'dsh-pet 桌面宠物');
     tray.setContextMenu(
-      Menu.buildFromTemplate(
-        pets.map((pet) => ({
+      Menu.buildFromTemplate([
+        ...(process.env.CODEX_PET_DATA
+          ? [
+              { label: '宠物设置', click: () => shell.openExternal(process.env.DSH_PET_SITE_URL) },
+              { type: 'separator' },
+            ]
+          : []),
+        ...pets.map((pet) => ({
           label: pet.name || pet.id,
           type: 'checkbox',
           checked: isDesktopDisplay(pet.display),
           click: () => traySetPetDisplay(pet.id, toggleDisplay(pet.display)),
         })),
-      ),
+        ...(process.env.CODEX_PET_DATA
+          ? [
+              { type: 'separator' },
+              {
+                label: '关闭桌宠',
+                click: () => {
+                  try {
+                    const r = JSON.parse(readFileSync(path.join(process.env.CODEX_PET_DATA, 'runtime.json'), 'utf8'));
+                    void fetch(r.origin + '/api/shutdown', {
+                      method: 'POST',
+                      headers: { authorization: 'Bearer ' + r.token },
+                    });
+                  } catch {}
+                },
+              },
+            ]
+          : []),
+      ]),
     );
     // Windows 上 setContextMenu 只接管右键，左键默认什么都不做（macOS 相反：左键即弹菜单）
     if (TRAY_PLATFORM.leftClickPopsMenu) tray.on('click', () => tray.popUpContextMenu());
+    if (process.env.CODEX_PET_DATA) {
+      let last = 0;
+      const since = Date.now();
+      const notificationTimer = setInterval(() => {
+        try {
+          const activity = JSON.parse(readFileSync(path.join(process.env.CODEX_PET_DATA, 'activity.json'), 'utf8'));
+          if (activity.ts <= last || activity.ts < since) return;
+          last = activity.ts;
+          if (!activity.notificationsEnabled || !Notification.isSupported()) return;
+          const body = {
+            waiting: 'Codex 正在等待你的确认或回答',
+            success: '这一轮 Codex 工作已完成',
+            error: 'Codex 刚才的操作遇到问题',
+          }[activity.state];
+          if (body) new Notification({ title: 'Codex 桌宠', body }).show();
+        } catch {}
+      }, 1000);
+      notificationTimer.unref();
+      app.once('before-quit', () => clearInterval(notificationTimer));
+    }
   } catch (e) {
     console.error('[dsh-pet-desktop-helper] tray init failed:', String(e && e.message ? e.message : e));
   }
@@ -1195,6 +1239,10 @@ app.whenReady().then(() => {
           );
           const image = await first.webContents.capturePage();
           writeFileSync(smokeOut, image.toPNG());
+          writeFileSync(
+            smokeOut + '.json',
+            JSON.stringify({ ...dump, interactiveIgnoring, passthroughIgnoring }, null, 2),
+          );
           console.log('[dsh-pet-desktop-helper] smoke capture:', smokeOut);
         }
       } catch (error) {

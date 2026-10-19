@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Codex 桌宠 · 宠物设置</title>
+    <style>
+      :root {
+        font:
+          15px/1.6 system-ui,
+          'Microsoft YaHei',
+          sans-serif;
+        color: #163647;
+        background: #edf5f6;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        max-width: 1000px;
+        margin: 45px auto;
+        padding: 0 24px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+      h1 {
+        font-size: 30px;
+        margin: 0;
+        letter-spacing: -1px;
+      }
+      h2 {
+        font-size: 18px;
+        margin: 0 0 16px;
+      }
+      .muted {
+        color: #53717d;
+        font-size: 13px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 20px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #d7e7e9;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 8px 30px #12485205;
+        margin-bottom: 20px;
+      }
+      button,
+      select,
+      input,
+      textarea {
+        font: inherit;
+      }
+      button {
+        background: #155a6c;
+        color: white;
+        border: 0;
+        border-radius: 9px;
+        padding: 9px 16px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: #edf5f6;
+        color: #155a6c;
+      }
+      button.danger {
+        background: #fff0ed;
+        color: #a43a24;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+      input[type='text'],
+      input[type='number'],
+      select,
+      textarea {
+        border: 1px solid #c6dce1;
+        border-radius: 8px;
+        padding: 8px;
+        background: #faffff;
+        color: #163647;
+        max-width: 100%;
+      }
+      label {
+        display: block;
+        margin: 10px 0;
+      }
+      textarea {
+        width: 100%;
+        resize: vertical;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .pet {
+        border-top: 1px solid #e3edef;
+        padding: 15px 0;
+      }
+      .pet label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 5px 10px 5px 0;
+      }
+      .pet input[type='text'] {
+        width: 140px;
+      }
+      .pet input[type='number'] {
+        width: 90px;
+      }
+      #message {
+        position: sticky;
+        top: 15px;
+        border-radius: 10px;
+        padding: 10px 15px;
+        background: #d9f3e6;
+        display: none;
+        z-index: 2;
+      }
+      #status {
+        font-size: 23px;
+        font-weight: 600;
+      }
+      .pill {
+        border-radius: 30px;
+        padding: 5px 12px;
+        background: #e1f1f5;
+        color: #155a6c;
+        font-size: 12px;
+      }
+      .session {
+        font-size: 13px;
+        margin: 8px 0;
+      }
+      .usage {
+        padding: 8px 0;
+        border-top: 1px solid #e8eff1;
+      }
+      progress {
+        width: 100%;
+        accent-color: #24849b;
+        height: 8px;
+      }
+      .reply {
+        white-space: pre-wrap;
+        padding: 12px;
+        background: #edf5f6;
+        border-radius: 10px;
+        margin: 12px 0;
+        display: none;
+      }
+      .foot {
+        padding: 0 0 35px;
+        color: #53717d;
+        font-size: 12px;
+      }
+      .tiny {
+        font-size: 12px;
+      }
+      details {
+        margin-top: 15px;
+      }
+      summary {
+        cursor: pointer;
+      }
+      a {
+        color: #176b80;
+      }
+      @media (max-width: 720px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        main {
+          margin-top: 24px;
+        }
+        header {
+          align-items: start;
+          gap: 16px;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div id="message" role="status"></div>
+      <header>
+        <div>
+          <span class="pill">CODEX COMPANION</span>
+          <h1>小伙伴在，慢慢来。</h1>
+          <div class="muted">让桌面上的小伙伴，跟上你的工作节奏。</div>
+        </div>
+        <button class="secondary" id="refresh">刷新状态</button>
+      </header>
+      <div class="grid">
+        <div>
+          <section class="card">
+            <h2>我的桌宠</h2>
+            <div id="pets">正在连接…</div>
+            <div class="row">
+              <button id="save">保存设置</button><button id="add" class="secondary">再添一只</button>
+            </div>
+            <details>
+              <summary>更多偏好</summary>
+              <label>碎碎念间隔（分钟） <input id="whisperMinutes" type="number" min="5" max="1440" value="30" /></label
+              ><label>小伙伴的性格<textarea id="persona" rows="3"></textarea></label>
+              <label><input id="notifications" type="checkbox" /> 完成、等待确认或出错时发系统通知</label>
+              <div class="muted">
+                聊天和碎碎念会使用当前 Codex 账号的模型额度。自动碎碎念默认关闭；对话记忆仅保存在本机。
+              </div>
+            </details>
+          </section>
+          <section class="card">
+            <h2>和小伙伴说句话</h2>
+            <div class="row">
+              <select id="target" aria-label="选择宠物"></select
+              ><button class="secondary" id="whisper">来句碎碎念</button>
+            </div>
+            <label>
+              <textarea
+                id="chatText"
+                rows="3"
+                maxlength="2000"
+                placeholder="今天写代码有点累，陪我聊两句…"
+              ></textarea></label
+            ><button id="chat">发送</button>
+            <div id="reply" class="reply" aria-live="polite"></div>
+            <div class="muted tiny" style="margin-top: 12px">这里是宠物聊天；回复不会执行命令或替你修改项目。</div>
+          </section>
+        </div>
+        <aside>
+          <section class="card">
+            <h2>工作节奏</h2>
+            <div id="status">空闲 · 陪你待着</div>
+            <div id="hookState" class="muted"></div>
+            <div id="sessions"></div>
+          </section>
+          <section class="card">
+            <div class="row" style="justify-content: space-between">
+              <h2>Codex 额度</h2>
+              <button class="secondary" id="usageBtn">查询</button>
+            </div>
+            <div id="usage" class="muted">点击查询，查看账号返回的额度窗口。</div>
+          </section>
+          <section class="card">
+            <h2>动作小剧场</h2>
+            <label><select id="animation" style="width: 100%"></select></label>
+            <div class="row">
+              <button id="play">播放动作</button><button class="secondary" id="clear">清空气泡</button>
+            </div>
+          </section>
+          <section class="card">
+            <h2>陪伴开关</h2>
+            <p class="muted">关闭后所有桌宠都会退出。下次运行启动器即可回来。</p>
+            <button id="stop" class="danger">关闭桌宠</button>
+          </section>
+        </aside>
+      </div>
+      <div class="foot">
+        Codex DSH Pet 1.0 · 基于 dsh-pet 0.3.7 ·
+        <a href="https://github.com/PC2005-cloud/dsh-pet" target="_blank" rel="noreferrer">原项目 · MIT</a>
+      </div>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let config = {},
+        pets = [];
+      const names = {
+        thinking: '思考中',
+        working: '正在干活',
+        result: '整理结果',
+        waiting: '等你确认',
+        success: '这一轮完成啦',
+        error: '遇到问题',
+        idle: '空闲 · 陪你待着',
+      };
+      function notice(text, error = false) {
+        $('message').textContent = text;
+        $('message').style.background = error ? '#ffe4de' : '#d9f3e6';
+        $('message').style.display = 'block';
+        setTimeout(() => ($('message').style.display = 'none'), 6000);
+      }
+      async function request(path, method = 'GET', body) {
+        const r = await fetch(path, {
+          method,
+          headers: { 'content-type': 'application/json', 'x-codex-pet': '1' },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        });
+        const v = await r.json();
+        if (!r.ok || v.ok === false) throw Error(v.error || v.message || v.reason || '操作失败');
+        return v;
+      }
+      async function action(button, fn) {
+        button.disabled = true;
+        try {
+          await fn();
+        } catch (e) {
+          notice(e.message, true);
+        } finally {
+          button.disabled = false;
+        }
+      }
+      function elem(tag, text) {
+        const e = document.createElement(tag);
+        if (text !== undefined) e.textContent = text;
+        return e;
+      }
+      function render() {
+        const container = $('pets');
+        container.replaceChildren();
+        $('target').replaceChildren();
+        pets.forEach((p, i) => {
+          const row = elem('div');
+          row.className = 'pet';
+          const name = elem('input');
+          name.type = 'text';
+          name.value = p.name;
+          name.maxLength = 30;
+          name.setAttribute('aria-label', '宠物名字');
+          name.oninput = () => (p.name = name.value);
+          row.append(name);
+          const size = elem('input');
+          size.type = 'number';
+          size.min = 180;
+          size.max = 900;
+          size.value = p.size;
+          size.setAttribute('aria-label', '宠物大小');
+          size.oninput = () => (p.size = Number(size.value));
+          row.append(' 大小 ', size);
+          for (const [key, label] of [
+            ['visible', '显示'],
+            ['workStatusEnabled', '跟随工作'],
+            ['balanceEnabled', '额度气泡'],
+            ['whisperEnabled', '自动碎碎念'],
+            ['fixedEnabled', '原地陪伴'],
+          ]) {
+            const l = elem('label');
+            const c = elem('input');
+            c.type = 'checkbox';
+            c.checked = key === 'visible' ? p.display !== 'none' : !!p[key];
+            c.onchange = () =>
+              key === 'visible' ? (p.display = c.checked ? 'desktop' : 'none') : (p[key] = c.checked);
+            l.append(c, label);
+            row.append(l);
+          }
+          if (pets.length > 1) {
+            const b = elem('button', '移除');
+            b.className = 'secondary';
+            b.onclick = () => {
+              pets.splice(i, 1);
+              render();
+            };
+            row.append(b);
+          }
+          container.append(row);
+          const o = elem('option', p.name || p.id);
+          o.value = p.id;
+          $('target').append(o);
+        });
+        animations();
+      }
+      function animations() {
+        const select = $('animation');
+        select.replaceChildren();
+        const entry =
+          Object.values(config).find((e) => (e.pets || []).some((p) => p.id === $('target').value)) || config.main;
+        function collect(v, out) {
+          if (typeof v === 'string') out.add(v);
+          else if (Array.isArray(v)) v.forEach((x) => collect(x, out));
+          else if (v && typeof v === 'object') Object.values(v).forEach((x) => collect(x, out));
+        }
+        const all = new Set();
+        collect(entry?.animations, all);
+        for (const name of all) {
+          const o = elem('option', name);
+          o.value = name;
+          select.append(o);
+        }
+      }
+      async function load() {
+        config = await request('/dsh-pet-7340/config');
+        pets = (config.main?.pets || []).map((p) => ({ ...p, position: { ...p.position } }));
+        $('persona').value = config.main?.whisperPrompt || '';
+        $('notifications').checked = config.main?.notificationsEnabled === true;
+        $('whisperMinutes').value = Math.round((config.main?.eventsRefreshSec?.whisper || 1800) / 60);
+        render();
+        await status();
+      }
+      async function status() {
+        const s = await request('/api/status');
+        $('status').textContent = names[s.state || 'idle'];
+        $('hookState').textContent = s.lastEventAt
+          ? '最近联动：' + new Date(s.lastEventAt).toLocaleTimeString()
+          : '尚未收到 Codex 事件。安装后，请在 Codex 审核并信任宠物 Hooks。';
+        $('sessions').replaceChildren();
+        s.sessions.forEach((v) => {
+          const e = elem(
+            'div',
+            v.id.slice(0, 8) + ' · ' + names[v.state] + (v.children ? ' · ' + v.children + ' 个子任务' : ''),
+          );
+          e.className = 'session';
+          $('sessions').append(e);
+        });
+        if (s.usage) renderUsage(s.usage);
+      }
+      function renderUsage(value) {
+        const box = $('usage');
+        box.replaceChildren();
+        if (!value.ok) {
+          box.textContent = value.message || '当前账号没有可用的额度读数';
+          return;
+        }
+        for (const w of value.data.limits || []) {
+          const d = elem('div');
+          d.className = 'usage';
+          d.append(elem('div', w.label + ' · 已用 ' + w.percent + '%'));
+          const p = elem('progress');
+          p.max = 100;
+          p.value = w.percent;
+          d.append(p, elem('div', w.resetsAt ? '重置：' + new Date(w.resetsAt).toLocaleString() : '重置时间未知'));
+          box.append(d);
+        }
+      }
+      $('refresh').onclick = (e) => action(e.target, status);
+      $('target').onchange = animations;
+      $('add').onclick = () => {
+        if (pets.length >= 8) return notice('最多同时显示 8 只桌宠', true);
+        pets.push({
+          ...pets[0],
+          id: 'whale-' + Date.now().toString(36),
+          name: '小蓝鲸 ' + (pets.length + 1),
+          position: { corner: 'bottom-right', marginX: 30 + pets.length * 180, marginY: 30 },
+        });
+        render();
+      };
+      $('save').onclick = (e) =>
+        action(e.target, async () => {
+          if (!pets.every((p) => p.name.trim() && Number.isFinite(p.size) && p.size >= 180 && p.size <= 900))
+            throw Error('请填写名字，大小应在 180–900 之间');
+          const mins = Number($('whisperMinutes').value);
+          if (!Number.isFinite(mins) || mins < 5 || mins > 1440) throw Error('碎碎念间隔应为 5–1440 分钟');
+          const main = config.main || {};
+          await request('/api/preferences', 'POST', {
+            pets,
+            whisperPrompt: $('persona').value,
+            notificationsEnabled: $('notifications').checked,
+            eventsRefreshSec: { ...main.eventsRefreshSec, whisper: mins * 60 },
+          });
+          notice('已保存，桌宠会按新设置重新出现');
+          await load();
+        });
+      $('usageBtn').onclick = (e) => action(e.target, async () => renderUsage(await request('/api/usage', 'POST', {})));
+      async function speak(kind) {
+        const target = $('target').value;
+        if (kind === 'chat' && !$('chatText').value.trim()) throw Error('先写一句话吧');
+        const before = await request('/dsh-pet-7340/state');
+        const counter = before.pets?.[target]?.say?.counter || 0;
+        await request(
+          '/dsh-pet-7340/' + kind + '?pet=' + encodeURIComponent(target),
+          'POST',
+          kind === 'chat' ? { text: $('chatText').value } : {},
+        );
+        const after = await request('/dsh-pet-7340/state');
+        const leaf = after.pets?.[target]?.say;
+        $('reply').textContent = leaf?.data?.text || (leaf?.counter !== counter ? '已发送到桌宠' : '请看桌宠气泡');
+        $('reply').style.display = 'block';
+      }
+      $('chat').onclick = (e) => action(e.target, () => speak('chat'));
+      $('whisper').onclick = (e) => action(e.target, () => speak('whisper'));
+      $('play').onclick = (e) =>
+        action(e.target, async () => {
+          await request('/dsh-pet-7340/anim?pet=' + encodeURIComponent($('target').value), 'POST', {
+            name: $('animation').value,
+          });
+          notice('动作已点播');
+        });
+      $('clear').onclick = (e) =>
+        action(e.target, () =>
+          request('/dsh-pet-7340/bubble/clear?pet=' + encodeURIComponent($('target').value), 'POST', {}),
+        );
+      $('stop').onclick = (e) =>
+        action(e.target, async () => {
+          await request('/api/shutdown', 'POST', {});
+          $('status').textContent = '小伙伴休息啦';
+          notice('桌宠已关闭');
+        });
+      (async () => {
+        try {
+          if (location.hash.length > 1) {
+            const token = location.hash.slice(1);
+            history.replaceState(null, '', location.pathname);
+            await request('/api/session', 'POST', { token });
+          }
+          await load();
+          setInterval(() => status().catch(() => {}), 3000);
+        } catch (e) {
+          notice(e.message, true);
+        }
+      })();
+    </script>
+  </body>
+</html>

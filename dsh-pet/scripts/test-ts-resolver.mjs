@@ -9,6 +9,15 @@
  * 且会牵动 tsdown / rolldown 两条构建链），不如只在测试进程里补这一层解析。
  */
 export async function resolve(specifier, context, nextResolve) {
+  if (process.env.CODEX_PET_TEST_SHIMS === '1') {
+    const shims = {
+      '@deepseek-ai/dsh-home-paths': 'dsh-home-paths',
+      '@deepseek-ai/dsh-credentials': 'dsh-credentials',
+      '@deepseek-ai/dsh-llm': 'dsh-llm',
+    };
+    if (shims[specifier])
+      return nextResolve(new URL('../src/standalone/shims/' + shims[specifier] + '.ts', import.meta.url).href, context);
+  }
   if (specifier.startsWith('./') || specifier.startsWith('../')) {
     if (!/\.[cm]?[jt]sx?$/.test(specifier) && !specifier.endsWith('.json')) {
       try {

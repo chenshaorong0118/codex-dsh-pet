@@ -48,3 +48,11 @@ dsh-pet/runtime/electron-helper/shared-core.js
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Codex adaptation local state and portable binaries
+dsh-pet/data/
+dsh-pet/runtime/electron/
+dsh-pet/runtime/node.exe
+*.zip
+*.log
+*.backup.json

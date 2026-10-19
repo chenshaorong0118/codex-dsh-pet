@@ -88,7 +88,11 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:ui": "node --test scripts/tests/*.test.mjs"
+    "test:ui": "node --test scripts/tests/*.test.mjs",
+    "codex:build": "npm run bundle && npm run build:desktop-core",
+    "codex:start": "node lib/codex.js",
+    "codex:test": "node --test src/codex/adapter.test.mjs",
+    "codex:typecheck": "tsc --noEmit -p tsconfig.codex.json"
   },
   "license": "MIT",
   "engines": {

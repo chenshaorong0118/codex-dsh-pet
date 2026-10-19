@@ -67,6 +67,7 @@ export default defineConfig([
     target: 'es2022',
     entry: {
       standalone: 'src/standalone/cli.ts',
+      codex: 'src/codex/main.mjs',
     },
     // tsdown 默认把 dependencies/peerDependencies 全部外部化（本包那三个 DSH 专有包正是
     // peerDependencies），所以这里必须先 noExternal 把它们拉回打包图，下面的 alias 才轮得到生效；

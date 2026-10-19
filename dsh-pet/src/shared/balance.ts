@@ -17,6 +17,7 @@ export interface RawBalanceResult {
   reason?: string;
   message?: string;
   data?: {
+    limits?: Array<{ label: string; percent: number; resetsAt?: string }>;
     rolling?: unknown;
     weekly?: unknown;
     monthly?: unknown;
@@ -41,6 +42,7 @@ export type PricingTier = 'peak' | 'idle';
 
 /** 已解析的余额视图（展示 + 档位计算用） */
 export interface BalanceView {
+  limits?: Array<{ label: string; percent: number; resetsAt?: string }>;
   provider: string;
   shape: 'windows' | 'money';
   ok: true;
@@ -119,6 +121,20 @@ export function toBalanceState(raw: unknown): BalanceState | null {
   if (!d || typeof d !== 'object') return null;
 
   if (r.shape === 'windows') {
+    if (Array.isArray(d.limits) && d.limits.length > 0) {
+      if (
+        !d.limits.every(
+          (w) =>
+            typeof w.label === 'string' &&
+            typeof w.percent === 'number' &&
+            Number.isFinite(w.percent) &&
+            w.percent >= 0 &&
+            w.percent <= 100,
+        )
+      )
+        return null;
+      return { provider, shape: 'windows', ok: true, limits: d.limits };
+    }
     const monthly = optNum(d.monthly);
     const rolling = optNum(d.rolling);
     const weekly = optNum(d.weekly);
@@ -176,6 +192,7 @@ export function toBalanceState(raw: unknown): BalanceState | null {
  *   0 元 → 100%）。没有基准 → undefined（不播档位动画，不替服务商猜一个）
  */
 export function balancePercent(v: BalanceView): number | undefined {
+  if (v.limits?.length) return Math.max(...v.limits.map((w) => w.percent));
   if (v.shape === 'money') {
     const total = Number(v.total);
     const full = Number(v.fullBalance);
@@ -249,6 +266,7 @@ function windowQuotas(v: BalanceView): Record<WindowKey, number | undefined> {
  * 绝对口径的副作用（刻意保留）：滚动窗额度最小，通常先报它；两端一致，完整读数见 tools/api-tester.html。
  */
 export function urgentWindow(v: BalanceView): WindowUsage | undefined {
+  if (v.limits?.length) return v.limits.reduce((a, b) => (b.percent > a.percent ? b : a));
   if (v.shape === 'money') return undefined;
   const quotas = windowQuotas(v);
   const resets: Record<WindowKey, string | undefined> = {
@@ -352,7 +370,7 @@ export function balanceBubbleView(state: BalanceState): BalanceBubbleRow[] {
         const reset = resetInText(w.resetsAt);
         const rows: BalanceBubbleRow[] = [
           { role: 'label', text: w.label + '额度已用 ' + Math.round(w.percent) + '%' },
-          { role: 'sub', text: reset ? reset + '重置' : '已重置' },
+          { role: 'sub', text: reset ? reset + '重置' : '重置时间未知' },
         ];
         return rows;
       }

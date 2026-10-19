@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@deepseek-ai/dsh-home-paths": ["./src/standalone/shims/dsh-home-paths.ts"],
+      "@deepseek-ai/dsh-credentials": ["./src/standalone/shims/dsh-credentials.ts"],
+      "@deepseek-ai/dsh-llm": ["./src/standalone/shims/dsh-llm.ts"]
+    }
+  },
+  "include": ["src/host/**/*.ts", "src/shared/**/*.ts", "src/standalone/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
+}
