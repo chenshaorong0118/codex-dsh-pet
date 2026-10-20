@@ -14,7 +14,14 @@ export const HOOK_EVENTS = [
   'SubagentStart',
   'SubagentStop',
 ];
-export function mergeHooks(document, command, remove = false) {
+export function windowsHookCommand(node, hook, data) {
+  const quote = (value) => "'" + value.replaceAll("'", "''") + "'";
+  const script = '& ' + [node, hook, data].map(quote).join(' ');
+  return (
+    'powershell.exe -NoProfile -NonInteractive -EncodedCommand ' + Buffer.from(script, 'utf16le').toString('base64')
+  );
+}
+export function mergeHooks(document, command, remove = false, commandWindows) {
   const result = structuredClone(document);
   result.hooks ||= {};
   for (const event of Object.keys(result.hooks)) {
@@ -25,7 +32,9 @@ export function mergeHooks(document, command, remove = false) {
   }
   if (!remove)
     for (const event of HOOK_EVENTS)
-      (result.hooks[event] ||= []).push({ hooks: [{ type: 'command', command, timeout: 2 }] });
+      (result.hooks[event] ||= []).push({
+        hooks: [{ type: 'command', command, ...(commandWindows ? { commandWindows } : {}), timeout: 2 }],
+      });
   return result;
 }
 export function installHooks({ codexHome, root, data, node = process.execPath, remove = false }) {
@@ -36,7 +45,12 @@ export function installHooks({ codexHome, root, data, node = process.execPath, r
   const previous = existsSync(target) ? readFileSync(target, 'utf8').replace(/^\uFEFF/, '') : '{}';
   const document = JSON.parse(previous);
   // An invalid existing file is deliberately not overwritten.
-  const updated = mergeHooks(document, command, remove);
+  const updated = mergeHooks(
+    document,
+    command,
+    remove,
+    windowsHookCommand(node, join(root, 'src', 'codex', 'hook.mjs'), data),
+  );
   const backup = join(data, `hooks.${Date.now()}.backup.json`);
   writeFileSync(backup, previous);
   writeFileSync(target + '.codex-pet.tmp', JSON.stringify(updated, null, 2) + '\n');

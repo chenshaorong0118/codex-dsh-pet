@@ -18,7 +18,7 @@ async function running() {
       headers: { authorization: `Bearer ${r.token}` },
       signal: AbortSignal.timeout(1000),
     });
-    if (!response.ok || (await response.json()).version !== '1.0.0') return null;
+    if (!response.ok || !/^1\./.test((await response.json()).version)) return null;
     return r;
   } catch {
     return null;

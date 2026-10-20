@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Fail-open hook: returns no instructions, never blocks Codex, strips all user content.
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 export function metadata(input) {
@@ -12,16 +12,30 @@ export function metadata(input) {
   return out;
 }
 export async function forward(input, dataDir) {
+  const report = (value) => {
+    try {
+      writeFileSync(
+        join(dataDir, 'hook-delivery.json'),
+        JSON.stringify({
+          at: Date.now(),
+          event: typeof input.hook_event_name === 'string' ? input.hook_event_name : null,
+          ...value,
+        }),
+      );
+    } catch {}
+  };
+  report({ phase: 'received' });
   if (process.env.CODEX_PET_CHILD === '1') return;
   const runtime = JSON.parse(readFileSync(join(dataDir, 'runtime.json'), 'utf8'));
   const url = new URL(runtime.origin);
   if (url.hostname !== '127.0.0.1' || url.protocol !== 'http:') throw new Error('Invalid local pet address');
-  await fetch(`${url.origin}/api/event`, {
+  const response = await fetch(`${url.origin}/api/event`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${runtime.token}` },
     body: JSON.stringify(metadata(input)),
     signal: AbortSignal.timeout(650),
   });
+  report({ phase: 'delivered', status: response.status });
 }
 if (process.argv[1]?.replaceAll('\\', '/').endsWith('/hook.mjs')) {
   try {

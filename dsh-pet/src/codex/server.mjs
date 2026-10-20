@@ -33,7 +33,7 @@ export async function serve({ port = 31380, token, routes, page, api, shutdown }
       res.setHeader('referrer-policy', 'no-referrer');
       res.setHeader('x-frame-options', 'DENY');
       if (pathname === '/health' && req.method === 'GET')
-        return json(res, 200, { name: 'codex-dsh-pet', version: '1.0.0' });
+        return json(res, 200, { name: 'codex-dsh-pet', version: '1.0.1' });
       if (pathname === '/' && req.method === 'GET') {
         res.writeHead(200, {
           'content-type': 'text/html; charset=utf-8',

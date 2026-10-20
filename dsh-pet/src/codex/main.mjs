@@ -16,7 +16,8 @@ const codexHome = process.env.CODEX_HOME || join(process.env.USERPROFILE || proc
 mkdirSync(data, { recursive: true });
 process.env.DSH_HOME = data;
 process.env.CODEX_PET_DATA = data;
-if (!process.env.DSH_PET_ELECTRON_PATH && existsSync(join(root, 'runtime', 'electron', 'electron.exe'))) process.env.DSH_PET_ELECTRON_PATH = join(root, 'runtime', 'electron', 'electron.exe');
+if (!process.env.DSH_PET_ELECTRON_PATH && existsSync(join(root, 'runtime', 'electron', 'electron.exe')))
+  process.env.DSH_PET_ELECTRON_PATH = join(root, 'runtime', 'electron', 'electron.exe');
 if (process.argv.includes('--headless')) process.env.DSH_PET_ELECTRON_PATH = join(data, 'no-electron');
 const userFile = join(data, 'dsh-pet', 'main-config.jsonc');
 mkdirSync(dirname(userFile), { recursive: true });
@@ -147,7 +148,7 @@ const service = await serve({
         chatBusy: client.busy,
         chatModel: client.model || null,
         usage: usageCache,
-        version: '1.0.0',
+        version: '1.0.1',
         upstream: '0.3.7',
       });
     if (path === '/api/event' && req.method === 'POST') {

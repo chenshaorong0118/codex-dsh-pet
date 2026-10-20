@@ -5,7 +5,7 @@ import { ActivityStore, usageBalance } from './state.mjs';
 import { metadata } from './hook.mjs';
 import { serve, sameSecret, readJson, json } from './server.mjs';
 import { execArgs } from './client.mjs';
-import { mergeHooks } from './install.mjs';
+import { mergeHooks, windowsHookCommand } from './install.mjs';
 function harness() {
   let now = 1000000;
   const store = new ActivityStore({ now: () => now });
@@ -153,6 +153,29 @@ test('hook install is idempotent and uninstall preserves other hooks and fields'
   assert.deepEqual(mergeHooks(once, 'pet'), once);
   assert.deepEqual(mergeHooks(once, 'pet', true), original);
   assert.equal(original.hooks.Stop.length, 1);
+});
+test('Windows launcher keeps spaces, Unicode and shell syntax inside literal path arguments', () => {
+  const paths = [
+    String.raw`C:\Program Files\node.exe`,
+    String.raw`C:\宠物 O'Brien\hook.mjs`,
+    String.raw`C:\data\$HOME; $(exit) & pets`,
+  ];
+  const command = windowsHookCommand(...paths);
+  assert.match(command, /^powershell\.exe -NoProfile -NonInteractive -EncodedCommand [A-Za-z0-9+/=]+$/);
+  const script = Buffer.from(command.split(' ').at(-1), 'base64').toString('utf16le');
+  assert.equal(
+    script,
+    "& 'C:\\Program Files\\node.exe' 'C:\\宠物 O''Brien\\hook.mjs' 'C:\\data\\$HOME; $(exit) & pets'",
+  );
+});
+test('Windows override survives reinstall and is removed without touching other platform overrides', () => {
+  const original = {
+    hooks: { Stop: [{ hooks: [{ type: 'command', command: 'other', commandWindows: 'other-windows' }] }] },
+  };
+  const once = mergeHooks(original, 'pet', false, 'pet-windows');
+  assert.equal(once.hooks.Stop.at(-1).hooks[0].commandWindows, 'pet-windows');
+  assert.deepEqual(mergeHooks(once, 'pet', false, 'pet-windows'), once);
+  assert.deepEqual(mergeHooks(once, 'pet', true), original);
 });
 test('loopback server blocks missing auth, hostile Origin, Host, CSRF and oversized hook bodies', async () => {
   const service = await serve({
